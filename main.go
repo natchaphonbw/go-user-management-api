@@ -13,7 +13,7 @@ func main() {
 	// Load configuration
 	cfg := config.LoadConfig()
 	// Connect to the database
-	db := databases.Connect()
+	db := databases.Connect(cfg)
 	// Run migrations
 	migrations.Migrate(db)
 

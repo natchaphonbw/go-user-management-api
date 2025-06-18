@@ -11,17 +11,10 @@ import (
 
 var DB *gorm.DB
 
-func Connect() *gorm.DB {
-	cfg := config.LoadConfig()
-
-	host := cfg.DBHost
-	port := cfg.DBPort
-	user := cfg.DBUser
-	password := cfg.DBPassword
-	dbName := cfg.DBName
+func Connect(cfg *config.Config) *gorm.DB {
 
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		host, port, user, password, dbName,
+		cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName,
 	)
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})

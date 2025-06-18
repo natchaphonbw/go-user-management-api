@@ -12,11 +12,11 @@ import (
 )
 
 type UserController struct {
-	userUsecase usecases.UserUseCase
+	userUsecase usecases.UserUsecase
 }
 
 // instance
-func NewUserController(u usecases.UserUseCase) *UserController {
+func NewUserController(u usecases.UserUsecase) *UserController {
 	return &UserController{
 		userUsecase: u,
 	}

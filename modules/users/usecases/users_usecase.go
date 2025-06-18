@@ -8,7 +8,7 @@ import (
 	"github.com/natchaphonbw/usermanagement/modules/users/dtos"
 )
 
-type UserUseCase interface {
+type UserUsecase interface {
 	CreateUser(ctx context.Context, input dtos.CreateUserRequest) (*dtos.UserResponse, error)
 	GetAllUsers(ctx context.Context) ([]*dtos.UserResponse, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (*dtos.UserResponse, error)

@@ -7,6 +7,21 @@ import (
 	"github.com/natchaphonbw/usermanagement/modules/users/entities"
 )
 
+type CreateUserRequest struct {
+	Name     string `json:"name" validate:"required,max=100"`
+	Email    string `json:"email" validate:"required,email"`
+	Age      int    `json:"age" validate:"required,min=13"`
+	Password string `json:"password" validate:"required,min=6"`
+}
+
+type UpdateUserRequest struct {
+	Name  *string `json:"name" validate:"omitempty,max=100"`
+	Email *string `json:"email" validate:"omitempty,email"`
+	Age   *int    `json:"age" validate:"omitempty,min=13"`
+}
+
+// Response
+
 type UserResponse struct {
 	ID        uuid.UUID `json:"id"`
 	Name      string    `json:"name"`

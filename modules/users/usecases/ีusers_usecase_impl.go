@@ -5,16 +5,18 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"github.com/natchaphonbw/usermanagement/modules/users/dtos"
 	"github.com/natchaphonbw/usermanagement/modules/users/entities"
 	"github.com/natchaphonbw/usermanagement/modules/users/repositories"
+	"github.com/natchaphonbw/usermanagement/pkg/utils"
 )
 
 type userUsecaseImpl struct {
 	repo repositories.UserRepository
 }
 
-func NewUserUseCase(repo repositories.UserRepository) UserUseCase {
+func NewUserUseCase(repo repositories.UserRepository) UserUsecase {
 	return &userUsecaseImpl{
 		repo: repo,
 	}
@@ -22,13 +24,20 @@ func NewUserUseCase(repo repositories.UserRepository) UserUseCase {
 
 // Create User
 func (u *userUsecaseImpl) CreateUser(ctx context.Context, input dtos.CreateUserRequest) (*dtos.UserResponse, error) {
+	hash, salt, err := utils.GeneratePasswordHash(input.Password, &utils.DefaultArgon2Config)
+	if err != nil {
+		return nil, err
+	}
+
 	user := &entities.User{
-		ID:         uuid.New(),
-		Name:       input.Name,
-		Email:      input.Email,
-		Age:        input.Age,
-		Created_at: time.Now(),
-		Updated_at: time.Now(),
+		ID:           uuid.New(),
+		Name:         input.Name,
+		Email:        input.Email,
+		Age:          input.Age,
+		PasswordHash: hash,
+		Salt:         salt,
+		Created_at:   time.Now(),
+		Updated_at:   time.Now(),
 	}
 
 	if err := u.repo.CreateUser(ctx, user); err != nil {

@@ -16,6 +16,8 @@ type Config struct {
 	DBUser     string
 	DBPassword string
 	DBName     string
+
+	JWT_SECRET string
 }
 
 func LoadConfig() *Config {

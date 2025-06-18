@@ -110,3 +110,20 @@ func (r *userPostgresRepository) DeleteUserByID(ctx context.Context, id uuid.UUI
 	return &user, nil
 
 }
+
+// Get by email
+func (r *userPostgresRepository) GetUserByEmail(ctx context.Context, email string) (*entities.User, error) {
+	var user entities.User
+	result := r.db.WithContext(ctx).First(&user, "email = ?", email)
+
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return nil, gorm.ErrRecordNotFound
+	}
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return &user, nil
+
+}
