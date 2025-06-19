@@ -6,7 +6,8 @@ import (
 
 	"github.com/natchaphonbw/usermanagement/modules/users/dtos"
 	"github.com/natchaphonbw/usermanagement/modules/users/usecases"
-	"github.com/natchaphonbw/usermanagement/modules/users/validations"
+	"github.com/natchaphonbw/usermanagement/modules/users/validator"
+	app_errors "github.com/natchaphonbw/usermanagement/pkg/errors"
 )
 
 type AuthController struct {
@@ -24,17 +25,17 @@ func (a *AuthController) Register(c *fiber.Ctx) error {
 	var req dtos.RegisterRequest
 
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
+		return app_errors.Send(c, app_errors.BadRequest("Invalid request body", err))
 
 	}
 
-	if err := validations.ValidateStruct(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Validation failed", "detail": err.Error()})
+	if errs := validator.ValidateStruct(req); len(errs) > 0 {
+		return app_errors.SendWithDetail(c, app_errors.BadRequest("Validation failed", nil), errs)
 	}
 
-	userResp, err := a.authUseCase.RegisterUser(c.Context(), req)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	userResp, respErr := a.authUseCase.RegisterUser(c.Context(), req)
+	if respErr != nil {
+		return app_errors.Send(c, respErr)
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(userResp)
@@ -46,16 +47,16 @@ func (a *AuthController) Login(c *fiber.Ctx) error {
 	var req dtos.LoginRequest
 
 	if err := c.BodyParser(&req); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "Invalid request body")
+		return app_errors.Send(c, app_errors.BadRequest("Invalid request body", err))
 	}
 
-	if err := validations.ValidateStruct(req); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	if errs := validator.ValidateStruct(req); len(errs) > 0 {
+		return app_errors.SendWithDetail(c, app_errors.BadRequest("Validation failed", nil), errs)
 	}
 
-	loginResp, err := a.authUseCase.Login(c.Context(), req)
-	if err != nil {
-		return fiber.NewError(fiber.StatusUnauthorized, err.Error())
+	loginResp, respErr := a.authUseCase.Login(c.Context(), req)
+	if respErr != nil {
+		return app_errors.Send(c, respErr)
 	}
 
 	return c.Status(fiber.StatusOK).JSON(loginResp)
@@ -67,7 +68,7 @@ func (a *AuthController) GetProfile(c *fiber.Ctx) error {
 
 	profile, err := a.authUseCase.GetProfile(c.Context(), userID)
 	if err != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
+		return app_errors.Send(c, err)
 	}
 
 	return c.Status(fiber.StatusOK).JSON(profile)

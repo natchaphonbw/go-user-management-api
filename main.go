@@ -4,12 +4,15 @@ import (
 	"fmt"
 
 	"github.com/natchaphonbw/usermanagement/config"
+	"github.com/natchaphonbw/usermanagement/modules/users/validator"
 	"github.com/natchaphonbw/usermanagement/pkg/databases"
 	"github.com/natchaphonbw/usermanagement/pkg/databases/migrations"
 	"github.com/natchaphonbw/usermanagement/server"
 )
 
 func main() {
+	// validate init
+	validator.Init()
 	// Load configuration
 	cfg := config.LoadConfig()
 	// Connect to the database

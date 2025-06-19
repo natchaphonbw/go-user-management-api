@@ -2,7 +2,6 @@ package repositories
 
 import (
 	"context"
-	"errors"
 	"log"
 
 	"github.com/google/uuid"
@@ -48,10 +47,6 @@ func (r *userPostgresRepository) GetUserByID(ctx context.Context, id uuid.UUID) 
 	var user entities.User
 	result := r.db.WithContext(ctx).First(&user, "id = ?", id)
 
-	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return nil, gorm.ErrRecordNotFound
-	}
-
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -65,9 +60,7 @@ func (r *userPostgresRepository) UpdateUserByID(ctx context.Context, id uuid.UUI
 	var user entities.User
 	// Find user by ID
 	findResult := r.db.WithContext(ctx).First(&user, "id = ?", id)
-	if errors.Is(findResult.Error, gorm.ErrRecordNotFound) {
-		return nil, gorm.ErrRecordNotFound
-	}
+
 	if findResult.Error != nil {
 		return nil, findResult.Error
 	}
@@ -93,9 +86,6 @@ func (r *userPostgresRepository) DeleteUserByID(ctx context.Context, id uuid.UUI
 	var user entities.User
 	findResult := r.db.WithContext(ctx).First(&user, "id = ?", id)
 
-	if errors.Is(findResult.Error, gorm.ErrRecordNotFound) {
-		return nil, gorm.ErrRecordNotFound
-	}
 	if findResult.Error != nil {
 		return nil, findResult.Error
 	}
@@ -115,10 +105,6 @@ func (r *userPostgresRepository) DeleteUserByID(ctx context.Context, id uuid.UUI
 func (r *userPostgresRepository) GetUserByEmail(ctx context.Context, email string) (*entities.User, error) {
 	var user entities.User
 	result := r.db.WithContext(ctx).First(&user, "email = ?", email)
-
-	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return nil, gorm.ErrRecordNotFound
-	}
 
 	if result.Error != nil {
 		return nil, result.Error

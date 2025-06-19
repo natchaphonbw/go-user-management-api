@@ -5,10 +5,11 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+
 	"github.com/natchaphonbw/usermanagement/modules/users/dtos"
 	"github.com/natchaphonbw/usermanagement/modules/users/usecases"
-	"github.com/natchaphonbw/usermanagement/modules/users/validations"
-	"gorm.io/gorm"
+	"github.com/natchaphonbw/usermanagement/modules/users/validator"
+	app_errors "github.com/natchaphonbw/usermanagement/pkg/errors"
 )
 
 type UserController struct {
@@ -28,24 +29,18 @@ func NewUserController(u usecases.UserUsecase) *UserController {
 func (ctrl *UserController) CreateUser(c *fiber.Ctx) error {
 	var req dtos.CreateUserRequest
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body",
-		})
+		return app_errors.Send(c, app_errors.BadRequest("Invalid request body", err))
 	}
 
 	// validate
-	if err := validations.ValidateStruct(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":  "Validation failed",
-			"detail": err.Error(),
-		})
+	if errs := validator.ValidateStruct(req); len(errs) > 0 {
+		return app_errors.SendWithDetail(c, app_errors.BadRequest("Validation failed", nil), errs)
 	}
 
 	// call usecase
 	userResp, err := ctrl.userUsecase.CreateUser(c.Context(), req)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err.Error()})
+		return app_errors.Send(c, err)
 
 	}
 
@@ -56,12 +51,10 @@ func (ctrl *UserController) CreateUser(c *fiber.Ctx) error {
 func (ctrl *UserController) GetAllUsers(c *fiber.Ctx) error {
 	usersResp, err := ctrl.userUsecase.GetAllUsers(c.Context())
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err.Error(),
-		})
+		return app_errors.Send(c, err)
 	}
 
-	return c.Status(fiber.StatusOK).JSON(usersResp)
+	return c.JSON(usersResp)
 }
 
 // GetUserByID
@@ -70,21 +63,12 @@ func (ctrl *UserController) GetUserByID(c *fiber.Ctx) error {
 	log.Printf("Fetching user with ID: %s", id)
 
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid user ID",
-		})
+		return app_errors.Send(c, app_errors.BadRequest("Invalid user ID", err))
 	}
 
-	userResp, err := ctrl.userUsecase.GetUserByID(c.Context(), id)
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-				"error": "User not found",
-			})
-		}
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err.Error(),
-		})
+	userResp, respErr := ctrl.userUsecase.GetUserByID(c.Context(), id)
+	if respErr != nil {
+		return app_errors.Send(c, respErr)
 	}
 
 	return c.Status(fiber.StatusOK).JSON(userResp)
@@ -97,37 +81,24 @@ func (ctrl *UserController) UpdateUserByID(c *fiber.Ctx) error {
 	log.Printf("Fetching user with ID: %s", id)
 
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid user ID",
-		})
+		return app_errors.Send(c, app_errors.BadRequest("Invalid user ID", err))
 	}
 
 	// parse request body
 	var req dtos.UpdateUserRequest
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body",
-		})
+		return app_errors.Send(c, app_errors.BadRequest("Invalid request body", err))
 	}
 
 	// validate
-	if err := validations.ValidateStruct(req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":  "Validation failed",
-			"detail": err.Error(),
-		})
+	if errs := validator.ValidateStruct(req); len(errs) > 0 {
+		return app_errors.SendWithDetail(c, app_errors.BadRequest("Validation failed", nil), errs)
 	}
 
 	// call usecase
-	userResp, err := ctrl.userUsecase.UpdateUserByID(c.Context(), id, req)
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-				"error": "User not found",
-			})
-		}
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err.Error()})
+	userResp, respErr := ctrl.userUsecase.UpdateUserByID(c.Context(), id, req)
+	if respErr != nil {
+		return app_errors.Send(c, respErr)
 
 	}
 
@@ -140,23 +111,14 @@ func (ctrl *UserController) DeleteUserByID(c *fiber.Ctx) error {
 	log.Printf("Fetching user with ID: %s", id)
 
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid user ID",
-		})
+		return app_errors.Send(c, app_errors.BadRequest("Invalid user ID", err))
 	}
 	// Delete user
-	deletedUser, err := ctrl.userUsecase.DeleteUserByID(c.Context(), id)
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-				"error": "User not found",
-			})
-		}
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": err.Error(),
-		})
+	deletedUser, delErr := ctrl.userUsecase.DeleteUserByID(c.Context(), id)
+	if delErr != nil {
+		return app_errors.Send(c, delErr)
 
 	}
 
-	return c.Status(fiber.StatusOK).JSON(deletedUser)
+	return c.JSON(deletedUser)
 }
