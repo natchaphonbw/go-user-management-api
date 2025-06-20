@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	"log"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -11,6 +12,8 @@ import (
 func JWTAuthMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		authHeader := c.Get("Authorization")
+		log.Printf("Authorization header: %s", authHeader)
+
 		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
 			return fiber.NewError(fiber.StatusUnauthorized, "Invalid or missing Authorization header")
 		}

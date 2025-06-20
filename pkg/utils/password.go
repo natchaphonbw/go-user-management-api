@@ -56,7 +56,7 @@ func VerifyPassword(password, encodedHash, encodedSalt string, config *Argon2Con
 	if len(newHash) != len(expectedHash) {
 		return false, nil
 	}
-
+	
 	match := subtle.ConstantTimeCompare(newHash, expectedHash) == 1
 
 	return match, nil

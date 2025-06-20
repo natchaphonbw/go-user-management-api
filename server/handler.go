@@ -31,6 +31,6 @@ func SetupRoutes(app *fiber.App, db *gorm.DB) {
 	authPublic.Post("/login", authController.Login)
 
 	authProtect := app.Group("/auth", middlewares.JWTAuthMiddleware())
-	authProtect.Post("/me", authController.GetProfile)
+	authProtect.Get("/me", authController.GetProfile)
 
 }
