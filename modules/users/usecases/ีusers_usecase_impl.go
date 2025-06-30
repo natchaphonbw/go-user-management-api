@@ -16,12 +16,12 @@ import (
 )
 
 type userUsecaseImpl struct {
-	repo repositories.UserRepository
+	userRepo repositories.UserRepository
 }
 
-func NewUserUseCase(repo repositories.UserRepository) UserUsecase {
+func NewUserUseCase(userRepo repositories.UserRepository) UserUsecase {
 	return &userUsecaseImpl{
-		repo: repo,
+		userRepo: userRepo,
 	}
 }
 
@@ -43,7 +43,7 @@ func (u *userUsecaseImpl) CreateUser(ctx context.Context, input dtos.CreateUserR
 		Updated_at:   time.Now(),
 	}
 
-	if err := u.repo.CreateUser(ctx, user); err != nil {
+	if err := u.userRepo.CreateUser(ctx, user); err != nil {
 		return nil, app_errors.InternalServer("Failed to create user", err)
 	}
 
@@ -52,7 +52,7 @@ func (u *userUsecaseImpl) CreateUser(ctx context.Context, input dtos.CreateUserR
 
 // Get All Users
 func (u *userUsecaseImpl) GetAllUsers(ctx context.Context) ([]*dtos.UserResponse, *app_errors.AppError) {
-	users, err := u.repo.GetAllUsers(ctx)
+	users, err := u.userRepo.GetAllUsers(ctx)
 	if err != nil {
 		return nil, app_errors.InternalServer("Failed to get users", err)
 	}
@@ -62,7 +62,7 @@ func (u *userUsecaseImpl) GetAllUsers(ctx context.Context) ([]*dtos.UserResponse
 
 // Get User By ID
 func (u *userUsecaseImpl) GetUserByID(ctx context.Context, id uuid.UUID) (*dtos.UserResponse, *app_errors.AppError) {
-	user, err := u.repo.GetUserByID(ctx, id)
+	user, err := u.userRepo.GetUserByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, app_errors.NotFound("User not found", err)
@@ -75,7 +75,7 @@ func (u *userUsecaseImpl) GetUserByID(ctx context.Context, id uuid.UUID) (*dtos.
 // Update User By ID
 func (u *userUsecaseImpl) UpdateUserByID(ctx context.Context, id uuid.UUID, input dtos.UpdateUserRequest) (*dtos.UserResponse, *app_errors.AppError) {
 
-	user, err := u.repo.GetUserByID(ctx, id)
+	user, err := u.userRepo.GetUserByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, app_errors.NotFound("User not found", err)
@@ -106,8 +106,8 @@ func (u *userUsecaseImpl) UpdateUserByID(ctx context.Context, id uuid.UUID, inpu
 
 	user.Updated_at = time.Now()
 
-	// Update user in repository
-	user, err = u.repo.UpdateUserByID(ctx, id, user)
+	// Update user in userRepository
+	user, err = u.userRepo.UpdateUserByID(ctx, id, user)
 	if err != nil {
 		return nil, app_errors.InternalServer("Failed to update user", err)
 	}
@@ -118,7 +118,7 @@ func (u *userUsecaseImpl) UpdateUserByID(ctx context.Context, id uuid.UUID, inpu
 
 // Delete User By ID
 func (u *userUsecaseImpl) DeleteUserByID(ctx context.Context, id uuid.UUID) (*dtos.UserResponse, *app_errors.AppError) {
-	user, err := u.repo.DeleteUserByID(ctx, id)
+	user, err := u.userRepo.DeleteUserByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, app_errors.NotFound("User not found", err)

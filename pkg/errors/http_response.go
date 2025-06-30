@@ -8,14 +8,12 @@ type ErrorResponse struct {
 }
 
 func Send(c *fiber.Ctx, appErr *AppError) error {
-	return c.Status(appErr.Code).JSON(ErrorResponse{
-		Message: appErr.Message,
-	})
-}
 
-func SendWithDetail(c *fiber.Ctx, appErr *AppError, details interface{}) error {
-	return c.Status(appErr.Code).JSON(ErrorResponse{
+	resp := ErrorResponse{
 		Message: appErr.Message,
-		Details: details,
-	})
+	}
+	if appErr.Details != nil {
+		resp.Details = appErr.Details
+	}
+	return c.Status(appErr.Code).JSON(resp)
 }

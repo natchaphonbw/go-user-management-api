@@ -14,10 +14,12 @@ func SetupRoutes(app *fiber.App, db *gorm.DB) {
 
 	userRepo := repositories.NewUserPostgresRepository(db)
 	userUseCase := usecases.NewUserUseCase(userRepo)
-	authUseCase := usecases.NewAuthUseCase(userUseCase, userRepo)
+	refreshRepo := repositories.NewRefreshTokenPostgresRepository(db)
+	refreshUseCase := usecases.NewRefreshTokenUsecase(refreshRepo)
+	authUseCase := usecases.NewAuthUseCase(userUseCase, refreshUseCase, userRepo, refreshRepo)
 
 	userController := controllers.NewUserController(userUseCase)
-	authController := controllers.NewAuthController(authUseCase)
+	authController := controllers.NewAuthController(authUseCase, refreshUseCase)
 
 	userGroup := app.Group("/users")
 	userGroup.Post("/", userController.CreateUser)
@@ -29,8 +31,11 @@ func SetupRoutes(app *fiber.App, db *gorm.DB) {
 	authPublic := app.Group("/auth")
 	authPublic.Post("/register", authController.Register)
 	authPublic.Post("/login", authController.Login)
+	authPublic.Post("/refresh", authController.RefreshToken)
 
 	authProtect := app.Group("/auth", middlewares.JWTAuthMiddleware())
 	authProtect.Get("/me", authController.GetProfile)
+	authProtect.Post("/logout", authController.Logout)
+	authProtect.Post("/logout/all", authController.LogoutAll)
 
 }

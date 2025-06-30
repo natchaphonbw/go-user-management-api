@@ -34,7 +34,7 @@ func (ctrl *UserController) CreateUser(c *fiber.Ctx) error {
 
 	// validate
 	if errs := validator.ValidateStruct(req); len(errs) > 0 {
-		return app_errors.SendWithDetail(c, app_errors.BadRequest("Validation failed", nil), errs)
+		return app_errors.Send(c, app_errors.BadRequest("Validation failed", nil).WithDetails(errs))
 	}
 
 	// call usecase
@@ -92,7 +92,7 @@ func (ctrl *UserController) UpdateUserByID(c *fiber.Ctx) error {
 
 	// validate
 	if errs := validator.ValidateStruct(req); len(errs) > 0 {
-		return app_errors.SendWithDetail(c, app_errors.BadRequest("Validation failed", nil), errs)
+		return app_errors.Send(c, app_errors.BadRequest("Validation failed", nil).WithDetails(errs))
 	}
 
 	// call usecase

@@ -11,12 +11,14 @@ import (
 )
 
 type AuthController struct {
-	authUseCase usecases.AuthUsecase
+	authUseCase    usecases.AuthUsecase
+	refreshUseCase usecases.RefreshTokenUsecase
 }
 
-func NewAuthController(u usecases.AuthUsecase) *AuthController {
+func NewAuthController(u usecases.AuthUsecase, r usecases.RefreshTokenUsecase) *AuthController {
 	return &AuthController{
-		authUseCase: u,
+		authUseCase:    u,
+		refreshUseCase: r,
 	}
 }
 
@@ -30,7 +32,7 @@ func (a *AuthController) Register(c *fiber.Ctx) error {
 	}
 
 	if errs := validator.ValidateStruct(req); len(errs) > 0 {
-		return app_errors.SendWithDetail(c, app_errors.BadRequest("Validation failed", nil), errs)
+		return app_errors.Send(c, app_errors.BadRequest("Validation failed", nil).WithDetails(errs))
 	}
 
 	userResp, respErr := a.authUseCase.RegisterUser(c.Context(), req)
@@ -51,10 +53,14 @@ func (a *AuthController) Login(c *fiber.Ctx) error {
 	}
 
 	if errs := validator.ValidateStruct(req); len(errs) > 0 {
-		return app_errors.SendWithDetail(c, app_errors.BadRequest("Validation failed", nil), errs)
+		return app_errors.Send(c, app_errors.BadRequest("Validation failed", nil).WithDetails(errs))
 	}
 
-	loginResp, respErr := a.authUseCase.Login(c.Context(), req)
+	deviceIP := c.IP()
+	deviceUA := c.Get("User-Agent")
+	deviceID := c.Get("X-Device-ID")
+
+	loginResp, respErr := a.authUseCase.Login(c.Context(), req, deviceIP, deviceUA, deviceID)
 	if respErr != nil {
 		return app_errors.Send(c, respErr)
 	}
@@ -73,4 +79,63 @@ func (a *AuthController) GetProfile(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusOK).JSON(profile)
 
+}
+
+// RefreshToken
+func (a *AuthController) RefreshToken(c *fiber.Ctx) error {
+	var req dtos.RefreshTokenRequest
+
+	if err := c.BodyParser(&req); err != nil {
+		return app_errors.Send(c, app_errors.BadRequest("Invalid request body", err))
+	}
+
+	if errs := validator.ValidateStruct(req); len(errs) > 0 {
+		return app_errors.Send(c, app_errors.BadRequest("Validation failed", nil).WithDetails(errs))
+	}
+
+	deviceIP := c.IP()
+	deviceUA := c.Get("User-Agent")
+	deviceID := c.Get("X-Device-ID")
+
+	tokenPair, respErr := a.refreshUseCase.Refresh(c.Context(), req.RefreshToken, deviceIP, deviceUA, deviceID)
+	if respErr != nil {
+		return app_errors.Send(c, respErr)
+	}
+
+	return c.Status(fiber.StatusOK).JSON(tokenPair)
+}
+
+// Logout
+func (a *AuthController) Logout(c *fiber.Ctx) error {
+	var req dtos.RefreshTokenRequest
+
+	if err := c.BodyParser(&req); err != nil {
+		return app_errors.Send(c, app_errors.BadRequest("Invalid request body", err))
+	}
+
+	if errs := validator.ValidateStruct(req); len(errs) > 0 {
+		return app_errors.Send(c, app_errors.BadRequest("Validation failed", nil).WithDetails(errs))
+	}
+
+	userID := c.Locals("userID").(uuid.UUID)
+	deviceUA := c.Get("User-Agent")
+	deviceID := c.Get("X-Device-ID")
+
+	if logoutErr := a.authUseCase.Logout(c.Context(), userID, req.RefreshToken, deviceID, deviceUA); logoutErr != nil {
+		return app_errors.Send(c, logoutErr)
+	}
+
+	return c.SendStatus(fiber.StatusNoContent)
+
+}
+
+// LogoutAll
+func (a *AuthController) LogoutAll(c *fiber.Ctx) error {
+	userID := c.Locals("userID").(uuid.UUID)
+
+	if logoutErr := a.authUseCase.LogoutAll(c.Context(), userID); logoutErr != nil {
+		return app_errors.Send(c, logoutErr)
+	}
+
+	return c.SendStatus(fiber.StatusNoContent)
 }

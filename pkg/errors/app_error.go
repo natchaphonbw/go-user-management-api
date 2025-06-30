@@ -5,13 +5,19 @@ import (
 )
 
 type AppError struct {
-	Code    int    // HTTP Status Code
-	Message string // Human-readable message
-	Err     error  // Raw error (optional)
+	Code    int         // HTTP Status Code
+	Message string      // Human-readable message
+	Err     error       // Raw error (optional)
+	Details interface{} // Additional details (optional)
 }
 
 func (e *AppError) Error() string {
 	return e.Message
+}
+
+func (e *AppError) WithDetails(details interface{}) *AppError {
+	e.Details = details
+	return e
 }
 
 func New(code int, message string, err error) *AppError {
