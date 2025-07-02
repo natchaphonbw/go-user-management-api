@@ -11,7 +11,6 @@ import (
 func JWTAuthMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		authHeader := c.Get("Authorization")
-		// log.Printf("Authorization header: %s", authHeader)
 
 		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
 			return fiber.NewError(fiber.StatusUnauthorized, "Invalid or missing Authorization header")
@@ -28,7 +27,14 @@ func JWTAuthMiddleware() fiber.Handler {
 			return fiber.NewError(fiber.StatusUnauthorized, "Invalid user ID in token")
 		}
 
+		sessionID, err := uuid.Parse(claims.SessionID)
+		if err != nil {
+			return fiber.NewError(fiber.StatusUnauthorized, "Invalid session ID in token")
+		}
+
 		c.Locals("userID", userID)
+		c.Locals("sessionID", sessionID)
+		c.Locals("tokenStr", tokenStr)
 		return c.Next()
 
 	}

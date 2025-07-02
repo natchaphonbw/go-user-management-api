@@ -13,24 +13,23 @@ import (
 	"github.com/natchaphonbw/usermanagement/modules/users/repositories"
 	"github.com/natchaphonbw/usermanagement/modules/users/validator"
 	app_errors "github.com/natchaphonbw/usermanagement/pkg/errors"
-	"github.com/natchaphonbw/usermanagement/pkg/jwt"
 )
 
 type AuthUsecaseImpl struct {
 	userUsecase    UserUsecase
-	refreshUsecase RefreshTokenUsecase
+	sessionUsecase SessionUsecase
 
 	userRepo    repositories.UserRepository
-	refreshRepo repositories.RefreshTokenRepository
+	sessionRepo repositories.SessionRepository
 }
 
-func NewAuthUseCase(userUsecase UserUsecase, refreshUsecase RefreshTokenUsecase, userRepo repositories.UserRepository, refreshRepo repositories.RefreshTokenRepository) AuthUsecase {
+func NewAuthUseCase(userUsecase UserUsecase, sessionUsecase SessionUsecase, userRepo repositories.UserRepository, sessionRepo repositories.SessionRepository) AuthUsecase {
 	return &AuthUsecaseImpl{
 		userUsecase:    userUsecase,
-		refreshUsecase: refreshUsecase,
+		sessionUsecase: sessionUsecase,
 
 		userRepo:    userRepo,
-		refreshRepo: refreshRepo,
+		sessionRepo: sessionRepo,
 	}
 }
 
@@ -73,7 +72,7 @@ func (a *AuthUsecaseImpl) Login(ctx context.Context, req dtos.LoginRequest, devi
 	}
 
 	// gen jwt token
-	tokenPair, pairErr := a.refreshUsecase.IssueTokenPair(ctx, user.ID, deviceIP, deviceUA, deviceID)
+	tokenPair, pairErr := a.sessionUsecase.IssueTokenPair(ctx, user.ID, deviceIP, deviceUA, deviceID)
 	if pairErr != nil {
 		return nil, app_errors.InternalServer("Failed to issue token pair", pairErr).WithDetails(pairErr.Details)
 	}
@@ -84,47 +83,49 @@ func (a *AuthUsecaseImpl) Login(ctx context.Context, req dtos.LoginRequest, devi
 }
 
 // Log out
-func (a *AuthUsecaseImpl) Logout(ctx context.Context, userID uuid.UUID, refreshToken, deviceID, deviceUA string) *app_errors.AppError {
-	claims, verifyErr := jwt.VerifyRefreshToken(refreshToken)
-	if verifyErr != nil {
-		return app_errors.Unautherized("Invalid refresh token", verifyErr)
-	}
-
-	if claims.UserID != userID.String() {
-		return app_errors.Unautherized("Refresh token does not belong to user", nil)
-	}
+func (a *AuthUsecaseImpl) Logout(ctx context.Context, sessionID uuid.UUID, deviceID, deviceUA string) *app_errors.AppError {
 
 	// Load token record from DB
-	tokenRecord, err := a.refreshRepo.GetByToken(ctx, refreshToken)
+	session, err := a.sessionRepo.GetByID(ctx, sessionID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return app_errors.NotFound("Refresh token not found", err)
+			return app_errors.NotFound("Session not found", err)
 		}
-		return app_errors.InternalServer("Failed to retrieve refresh token", err)
+		return app_errors.InternalServer("Failed to get session", err)
 	}
 
-	// Check device info
-	if tokenRecord.DeviceID != deviceID || tokenRecord.DeviceUA != deviceUA {
+	// check revoked or expired
+	if session.Revoked {
+		return app_errors.Unautherized("Refresh token already revoked", nil)
+	}
+
+	// check device info
+	if session.DeviceID != deviceID || session.DeviceUA != deviceUA {
 		return app_errors.Unautherized("Device info mismatch", nil)
 	}
 
-	if err := a.refreshRepo.DeleteByToken(ctx, refreshToken); err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return app_errors.NotFound("Refresh token not found", err)
+	// revoke
+	if revokeErr := a.sessionRepo.MarkRevoked(ctx, sessionID); revokeErr != nil {
+		if errors.Is(revokeErr, gorm.ErrRecordNotFound) {
+			return app_errors.NotFound("session not found", revokeErr)
 		}
-		return app_errors.InternalServer("Failed to revoke refresh token", err)
+		return app_errors.InternalServer("Failed to revoke sessions", revokeErr)
 	}
+
 	return nil
 }
 
 // Log out all devices
 func (a *AuthUsecaseImpl) LogoutAll(ctx context.Context, userID uuid.UUID) *app_errors.AppError {
-	if err := a.refreshRepo.DeleteByUserID(ctx, userID); err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return app_errors.NotFound("No refresh tokens found for user", err)
+
+	// revoke
+	if revokeErr := a.sessionRepo.MarkRevoked(ctx, userID); revokeErr != nil {
+		if errors.Is(revokeErr, gorm.ErrRecordNotFound) {
+			return app_errors.NotFound("session not found", revokeErr)
 		}
-		return app_errors.InternalServer("Failed to revoke all refresh tokens", err)
+		return app_errors.InternalServer("Failed to revoke sessions for user", revokeErr)
 	}
+
 	return nil
 }
 

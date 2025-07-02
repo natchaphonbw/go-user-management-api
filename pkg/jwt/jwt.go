@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/matthewhartstonge/argon2"
 )
 
 var (
@@ -15,13 +16,15 @@ var (
 )
 
 type Claims struct {
-	UserID string `json:"user_id"`
+	UserID    string `json:"user_id"`
+	SessionID string `json:"session_id"`
 	jwt.RegisteredClaims
 }
 
-func GenerateAccessToken(userID string) (string, error) {
-		claims := &Claims{
-		UserID: userID,
+func GenerateAccessToken(userID, sessionID string) (string, error) {
+	claims := &Claims{
+		UserID:    userID,
+		SessionID: sessionID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(accessTokenTTL)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -34,12 +37,13 @@ func GenerateAccessToken(userID string) (string, error) {
 	return token.SignedString(accessSecretKey)
 }
 
-func GenerateRefreshToken(userID string) (string, time.Time, time.Time, error) {
+func GenerateRefreshToken(userID, sessionID string) (string, time.Time, time.Time, error) {
 	issuedAt := time.Now()
 	expiresAt := issuedAt.Add(refreshTokenTTL)
 
 	claims := &Claims{
-		UserID: userID,
+		UserID:    userID,
+		SessionID: sessionID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expiresAt),
 			IssuedAt:  jwt.NewNumericDate(issuedAt),
@@ -73,4 +77,19 @@ func verifyToken(tokenStr string, secretKey []byte) (*Claims, error) {
 	}
 
 	return nil, err
+}
+
+func HashRefreshToken(token string) (string, error) {
+	config := argon2.DefaultConfig()
+
+	encoded, err := config.HashEncoded([]byte(token))
+	if err != nil {
+		return "", err
+	}
+
+	return string(encoded), nil
+}
+
+func VerifyRefreshTokenHash(rawToken, hashedToken string) (bool, error) {
+	return argon2.VerifyEncoded([]byte(rawToken), []byte(hashedToken))
 }

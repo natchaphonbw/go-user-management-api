@@ -14,12 +14,12 @@ func SetupRoutes(app *fiber.App, db *gorm.DB) {
 
 	userRepo := repositories.NewUserPostgresRepository(db)
 	userUseCase := usecases.NewUserUseCase(userRepo)
-	refreshRepo := repositories.NewRefreshTokenPostgresRepository(db)
-	refreshUseCase := usecases.NewRefreshTokenUsecase(refreshRepo)
-	authUseCase := usecases.NewAuthUseCase(userUseCase, refreshUseCase, userRepo, refreshRepo)
+	sessionRepo := repositories.NewSessionPostgresRepository(db)
+	sessionUseCase := usecases.NewSessionUsecase(sessionRepo)
+	authUseCase := usecases.NewAuthUseCase(userUseCase, sessionUseCase, userRepo, sessionRepo)
 
 	userController := controllers.NewUserController(userUseCase)
-	authController := controllers.NewAuthController(authUseCase, refreshUseCase)
+	authController := controllers.NewAuthController(authUseCase, sessionUseCase)
 
 	userGroup := app.Group("/users")
 	userGroup.Post("/", userController.CreateUser)
