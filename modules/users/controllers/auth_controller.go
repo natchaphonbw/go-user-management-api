@@ -12,10 +12,10 @@ import (
 
 type AuthController struct {
 	authUseCase    usecases.AuthUsecase
-	refreshUseCase usecases.RefreshTokenUsecase
+	refreshUseCase usecases.SessionUsecase
 }
 
-func NewAuthController(u usecases.AuthUsecase, r usecases.RefreshTokenUsecase) *AuthController {
+func NewAuthController(u usecases.AuthUsecase, r usecases.SessionUsecase) *AuthController {
 	return &AuthController{
 		authUseCase:    u,
 		refreshUseCase: r,
@@ -93,11 +93,14 @@ func (a *AuthController) RefreshToken(c *fiber.Ctx) error {
 		return app_errors.Send(c, app_errors.BadRequest("Validation failed", nil).WithDetails(errs))
 	}
 
+	sessionID := c.Locals("sessionID").(uuid.UUID)
+	refreshToken := c.Locals("tokenStr").(string)
+
 	deviceIP := c.IP()
 	deviceUA := c.Get("User-Agent")
 	deviceID := c.Get("X-Device-ID")
 
-	tokenPair, respErr := a.refreshUseCase.Refresh(c.Context(), req.RefreshToken, deviceIP, deviceUA, deviceID)
+	tokenPair, respErr := a.refreshUseCase.Refresh(c.Context(), refreshToken, deviceIP, deviceUA, deviceID, sessionID)
 	if respErr != nil {
 		return app_errors.Send(c, respErr)
 	}
@@ -117,11 +120,11 @@ func (a *AuthController) Logout(c *fiber.Ctx) error {
 		return app_errors.Send(c, app_errors.BadRequest("Validation failed", nil).WithDetails(errs))
 	}
 
-	userID := c.Locals("userID").(uuid.UUID)
+	sessionID := c.Locals("sessionID").(uuid.UUID)
 	deviceUA := c.Get("User-Agent")
 	deviceID := c.Get("X-Device-ID")
 
-	if logoutErr := a.authUseCase.Logout(c.Context(), userID, req.RefreshToken, deviceID, deviceUA); logoutErr != nil {
+	if logoutErr := a.authUseCase.Logout(c.Context(), sessionID, deviceID, deviceUA); logoutErr != nil {
 		return app_errors.Send(c, logoutErr)
 	}
 
