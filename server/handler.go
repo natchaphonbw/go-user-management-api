@@ -31,10 +31,10 @@ func SetupRoutes(app *fiber.App, db *gorm.DB) {
 	authPublic := app.Group("/auth")
 	authPublic.Post("/register", authController.Register)
 	authPublic.Post("/login", authController.Login)
-	authPublic.Post("/refresh", authController.RefreshToken)
 
 	authProtect := app.Group("/auth", middlewares.JWTAuthMiddleware())
 	authProtect.Get("/me", authController.GetProfile)
+	authProtect.Post("/refresh", authController.RefreshToken)
 	authProtect.Post("/logout", authController.Logout)
 	authProtect.Post("/logout/all", authController.LogoutAll)
 

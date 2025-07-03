@@ -51,6 +51,7 @@ func (u *SessionUsecaseImpl) IssueTokenPair(ctx context.Context, userID uuid.UUI
 		UserID:      userID,
 		HashedToken: hashedToken,
 		DeviceIP:    deviceIP,
+		DeviceID:    deviceID,
 		DeviceUA:    deviceUA,
 		IssuedAt:    issuedAt,
 		ExpiresAt:   expiresAt,
@@ -110,5 +111,3 @@ func (u *SessionUsecaseImpl) Refresh(ctx context.Context, refreshToken, deviceIP
 	return u.IssueTokenPair(ctx, session.UserID, deviceIP, deviceUA, deviceID)
 
 }
-
-

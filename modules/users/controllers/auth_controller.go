@@ -83,16 +83,6 @@ func (a *AuthController) GetProfile(c *fiber.Ctx) error {
 
 // RefreshToken
 func (a *AuthController) RefreshToken(c *fiber.Ctx) error {
-	var req dtos.RefreshTokenRequest
-
-	if err := c.BodyParser(&req); err != nil {
-		return app_errors.Send(c, app_errors.BadRequest("Invalid request body", err))
-	}
-
-	if errs := validator.ValidateStruct(req); len(errs) > 0 {
-		return app_errors.Send(c, app_errors.BadRequest("Validation failed", nil).WithDetails(errs))
-	}
-
 	sessionID := c.Locals("sessionID").(uuid.UUID)
 	refreshToken := c.Locals("tokenStr").(string)
 
@@ -110,15 +100,6 @@ func (a *AuthController) RefreshToken(c *fiber.Ctx) error {
 
 // Logout
 func (a *AuthController) Logout(c *fiber.Ctx) error {
-	var req dtos.RefreshTokenRequest
-
-	if err := c.BodyParser(&req); err != nil {
-		return app_errors.Send(c, app_errors.BadRequest("Invalid request body", err))
-	}
-
-	if errs := validator.ValidateStruct(req); len(errs) > 0 {
-		return app_errors.Send(c, app_errors.BadRequest("Validation failed", nil).WithDetails(errs))
-	}
 
 	sessionID := c.Locals("sessionID").(uuid.UUID)
 	deviceUA := c.Get("User-Agent")

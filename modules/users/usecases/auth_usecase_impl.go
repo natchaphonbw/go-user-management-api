@@ -94,7 +94,7 @@ func (a *AuthUsecaseImpl) Logout(ctx context.Context, sessionID uuid.UUID, devic
 		return app_errors.InternalServer("Failed to get session", err)
 	}
 
-	// check revoked or expired
+	// check revoked
 	if session.Revoked {
 		return app_errors.Unautherized("Refresh token already revoked", nil)
 	}
@@ -119,7 +119,7 @@ func (a *AuthUsecaseImpl) Logout(ctx context.Context, sessionID uuid.UUID, devic
 func (a *AuthUsecaseImpl) LogoutAll(ctx context.Context, userID uuid.UUID) *app_errors.AppError {
 
 	// revoke
-	if revokeErr := a.sessionRepo.MarkRevoked(ctx, userID); revokeErr != nil {
+	if revokeErr := a.sessionRepo.MarkRevokedByUserID(ctx, userID); revokeErr != nil {
 		if errors.Is(revokeErr, gorm.ErrRecordNotFound) {
 			return app_errors.NotFound("session not found", revokeErr)
 		}
