@@ -91,10 +91,10 @@ func (r *userPostgresRepository) DeleteUserByID(ctx context.Context, id uuid.UUI
 	}
 
 	// delete
-	UpdateResult := r.db.WithContext(ctx).Delete(&user)
-	if UpdateResult.Error != nil {
-		log.Printf("Error deleting user: %v", UpdateResult.Error)
-		return nil, UpdateResult.Error
+	DeleteResult := r.db.WithContext(ctx).Delete(&user)
+	if DeleteResult.Error != nil {
+		log.Printf("Error deleting user: %v", DeleteResult.Error)
+		return nil, DeleteResult.Error
 	}
 
 	return &user, nil

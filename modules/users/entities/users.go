@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 type User struct {
@@ -16,11 +15,4 @@ type User struct {
 	Age          int       `gorm:"type:int;not null" json:"age"`
 	Created_at   time.Time `gorm:"type:timestamp;default:current_timestamp" json:"created_at"`
 	Updated_at   time.Time `gorm:"type:timestamp;default:current_timestamp" json:"updated_at"`
-}
-
-func (u *User) BeforeCreate(tx *gorm.DB) (err error) {
-	if u.ID == uuid.Nil {
-		u.ID = uuid.New()
-	}
-	return
 }

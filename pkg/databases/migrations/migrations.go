@@ -10,6 +10,7 @@ import (
 func Migrate(db *gorm.DB) {
 	err := db.AutoMigrate(
 		&entities.User{},
+		&entities.Session{},
 	)
 	if err != nil {
 		log.Fatalf("Failed to run migrations: %v", err)
